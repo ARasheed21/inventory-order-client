@@ -48,3 +48,6 @@ app.*.map.json
 \.claude
 \.delegate
 skills-lock.json
+
+\.opencode
+\.specify
