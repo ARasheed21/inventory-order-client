@@ -43,36 +43,3 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-\.agents
-\.claude
-\.delegate
-skills-lock.json
-
-\.opencode
-\.specify
-
-# Monorepo / Melos
-melos_overrides.yaml
-pubspec_overrides.yaml
-
-# Environment files (FR-014) - never commit real env values
-.env
-.env.*
-!.env.example
-
-# Build outputs
-app/build/
-web/build/
-build/
-coverage/
-*.lcov
-
-# Jaspr
-.web/
-
-# Symbols from obfuscated builds
-*.symbols/
-
-# Docker volumes
-docker/data/

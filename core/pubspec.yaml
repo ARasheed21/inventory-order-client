@@ -1,0 +1,26 @@
+name: core
+description: Shared domain, data, and design primitives for the Inventory & Order Management clients.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  dio: ^5.7.0
+  one_of: '>=1.5.0 <2.0.0'
+  one_of_serializer: '>=1.5.0 <2.0.0'
+  built_value: '>=8.4.0 <9.0.0'
+  built_collection: '>=5.1.1 <6.0.0'
+  fpdart: ^1.1.0
+  get_it: ^8.0.0
+  stomp_dart_client: ^2.1.0
+  crypto: ^3.0.5
+  meta: ^1.15.0
+
+dev_dependencies:
+  coverage: ^1.9.0
+  build_runner: ^2.4.13
+  built_value_generator: '>=8.4.0 <9.0.0'
+  lints: ^6.0.0
+  test: ^1.25.0

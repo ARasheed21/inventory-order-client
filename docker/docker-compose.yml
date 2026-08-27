@@ -1,0 +1,32 @@
+version: "3.9"
+
+# Local backend instance for development and integration scenarios (FR-017).
+# The image must match contracts/api/openapi.yaml (Inventory Management System API 0.1.0).
+#
+# Usage:
+#   docker compose -f docker/docker-compose.yml up -d
+#   docker compose -f docker/docker-compose.yml down
+
+services:
+  inventory-backend:
+    image: ghcr.io/inventorymanagement/inventory-backend:0.1.0
+    container_name: inventory-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-qO-",
+          "http://localhost:8080/actuator/health",
+          "||",
+          "exit",
+          "1",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s

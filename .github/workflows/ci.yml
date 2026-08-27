@@ -1,0 +1,116 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap --ignore-deps
+
+      - name: Analyze
+        run: melos exec -- dart analyze .
+
+      - name: Verify formatting
+        run: melos exec -- dart format --set-exit-if-changed --output=none .
+
+      # FR-003 / Constitution II: clients may only import package:core/core.dart.
+      - name: Enforce core export integrity
+        run: |
+          violations=$(grep -rE "package:core/([a-z_/]+\.dart)" app/lib web/lib \
+            | grep -v "package:core/core.dart" || true)
+          if [ -n "$violations" ]; then
+            echo "::error::Internal core module imports detected:"
+            echo "$violations"
+            exit 1
+          fi
+
+      # SC-003: no raw style literals outside core design tokens.
+      - name: Enforce design-token usage (no raw style constants)
+        run: |
+          violations=$(grep -rnE "Color\(0x[0-9A-Fa-f]{8}\)|#[0-9A-Fa-f]{6}\b" \
+            app/lib/features web/lib/pages web/lib/components 2>/dev/null || true)
+          if [ -n "$violations" ]; then
+            echo "::error::Raw style literals found outside token definitions:"
+            echo "$violations"
+            exit 1
+          fi
+
+      # Constitution XI: Conventional Commits for automated versioning.
+      - name: Enforce Conventional Commits (PR title)
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "${{ github.event.pull_request.title }}" | \
+            grep -qE "^(feat|fix|chore|docs|refactor|test|build|ci|perf|style|revert)(\(.+\))?!?: .+"
+
+      - name: Run core unit tests
+        working-directory: core
+        run: dart test --coverage=coverage
+
+      # FR-012: shared-core coverage must stay >= 75%.
+      - name: Check core coverage >= 75%
+        working-directory: core
+        run: |
+          dart pub global activate coverage
+          dart pub global run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib --check-ignore
+          total=$(grep -c "^DA:" coverage/lcov.info || echo 0)
+          hits=$(awk -F, '/^DA:/ {if ($3>0) count++} END {print count+0}' coverage/lcov.info)
+          echo "covered lines: $hits / $total"
+          if [ "$total" -gt 0 ] && [ "$hits" -lt $(( total * 75 / 100 )) ]; then
+            echo "::error::Core coverage below 75%"
+            exit 1
+          fi
+
+      - name: Run Flutter widget tests
+        working-directory: app
+        run: flutter test
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+
+      # FR-017: integration scenarios run against the locally launched backend.
+      - name: Start backend container
+        run: docker compose -f docker/docker-compose.yml up -d --wait
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Prepare environment
+        working-directory: app
+        run: |
+          cp ../.env.example config.env
+          flutter pub get
+
+      - name: Run integration journeys (Android emulator-free, headless)
+        working-directory: app
+        run: flutter test integration_test -d headless-web-server
+
+      - name: Stop backend container
+        if: always()
+        run: docker compose -f docker/docker-compose.yml down

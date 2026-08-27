@@ -68,3 +68,4 @@ failure.
 cd app; flutter build apk --obfuscate --split-debug-info=build/symbols   # hardened mobile artifact
 cd ../web; jaspr build --release                                         # minified web build
 ```
+

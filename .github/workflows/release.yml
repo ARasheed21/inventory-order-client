@@ -1,0 +1,90 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# FR-013 / SC-007: hardened artifacts from a tagged commit, no manual steps.
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Prepare environment
+        working-directory: app
+        run: cp ../.env.example config.env
+
+      - name: Build obfuscated APK
+        working-directory: app
+        run: >
+          flutter build apk --release --obfuscate
+          --split-debug-info=build/symbols
+          --dart-define=APP_ENV=staging
+          --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+          --dart-define=CERT_PINS=${{ secrets.CERT_PINS }}
+          --dart-define=API_BASE_URL=${{ secrets.STAGING_API_BASE_URL }}
+          --dart-define=WS_URL=${{ secrets.STAGING_WS_URL }}
+
+      - name: Upload artifact to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: qa
+          file: app/build/app/outputs/flutter-apk/app-release.apk
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install Jaspr CLI
+        run: dart pub global activate jaspr_cli
+
+      - name: Get dependencies
+        working-directory: web
+        run: dart pub get
+
+      - name: Write runtime environment document
+        working-directory: web/web
+        run: |
+          cat > env.json <<EOF
+          {
+            "API_BASE_URL": "${{ secrets.STAGING_API_BASE_URL }}",
+            "WS_URL": "${{ secrets.STAGING_WS_URL }}",
+            "SENTRY_DSN": "${{ secrets.SENTRY_DSN }}",
+            "CERT_PINS": "",
+            "APP_ENV": "staging"
+          }
+          EOF
+
+      - name: Build minified web bundle
+        working-directory: web
+        run: jaspr build -O 2
+
+      - name: Deploy to Firebase Hosting (staging)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: staging
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
