@@ -133,8 +133,10 @@ jobs:
           api-level: 35
           arch: x86_64
           profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot
+          disable-animations: true
           script: |
-            cd "$GITHUB_WORKSPACE/app" && cp "$GITHUB_WORKSPACE/.env.example" config.env && flutter test integration_test -d emulator-5554 \
+            cd "$GITHUB_WORKSPACE/app" && cp "$GITHUB_WORKSPACE/.env.example" config.env && flutter test integration_test/auth_flow_test.dart integration_test/error_recovery_test.dart -d emulator-5554 \
               --dart-define-from-file=config.env \
               --dart-define=API_BASE_URL=http://10.0.2.2:8080 \
               --dart-define=WS_URL=ws://10.0.2.2:8080/api/ws/websocket

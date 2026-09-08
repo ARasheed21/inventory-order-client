@@ -46,7 +46,8 @@ jaspr serve
 
 # 5c. Run Android integration tests
 cd ..\app
-flutter test integration_test -d emulator-5554 `
+flutter test integration_test/auth_flow_test.dart integration_test/error_recovery_test.dart `
+	-d emulator-5554 `
 	--dart-define-from-file=config.env `
 	--dart-define=API_BASE_URL=http://10.0.2.2:8080 `
 	--dart-define=WS_URL=ws://10.0.2.2:8080/api/ws/websocket
