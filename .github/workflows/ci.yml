@@ -82,7 +82,7 @@ jobs:
           dart pub global activate coverage
           dart pub global run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib --check-ignore
           total=$(grep -c "^DA:" coverage/lcov.info || echo 0)
-          hits=$(awk -F, '/^DA:/ {if ($3>0) count++} END {print count+0}' coverage/lcov.info)
+          hits=$(awk -F, '/^DA:/ {if ($2>0) count++} END {print count+0}' coverage/lcov.info)
           echo "covered lines: $hits / $total"
           if [ "$total" -gt 0 ] && [ "$hits" -lt $(( total * 75 / 100 )) ]; then
             echo "::error::Core coverage below 75%"
