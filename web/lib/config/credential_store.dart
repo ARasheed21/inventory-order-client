@@ -60,4 +60,3 @@ final class BrowserCredentialStore implements CredentialStore {
     _sessionStorage.remove('inventory.session');
   }
 }
-

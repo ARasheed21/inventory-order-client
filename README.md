@@ -18,9 +18,10 @@ contributing.
 
 ```powershell
 # 1. Install prerequisites: Flutter SDK (stable), Docker Desktop
-dart pub global activate melos
+dart pub global activate melos 6.3.0
 
 # 2. Bootstrap the workspace
+dart pub get
 melos bootstrap
 
 # 3. Create your environment file (never commit it)

@@ -1,0 +1,9 @@
+name: inventory_order_workspace
+description: Inventory and Order Management frontend workspace.
+publish_to: none
+
+environment:
+  sdk: ^3.10.7
+
+dev_dependencies:
+  melos: 6.3.0

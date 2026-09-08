@@ -7,6 +7,14 @@ import 'package:inventory_web/pages/home_page.dart';
 /// classes; dark-mode and breakpoint behavior live in tokens.css/styles.css.
 void main() {
   group('HomePage', () {
+    setUp(() {
+      getIt.registerSingleton<RealtimeChannel>(RealtimeChannel());
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
     testComponents('renders all placeholder strings', (tester) async {
       tester.pumpComponent(const HomePage());
 

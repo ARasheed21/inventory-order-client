@@ -25,10 +25,10 @@ scripts:
   flutter_test:
     exec: flutter test
     packageFilters:
-      dependsOn: "flutter"
+      dependsOn: flutter
     description: Run widget tests in Flutter packages.
   build:
     exec: dart run build_runner build --delete-conflicting-outputs
     packageFilters:
-      dependsOn: "build_runner"
-    description: Run code generation (riverpod_generator) where configured.
+      dependsOn: build_runner
+    description: Run code generation where configured.

@@ -23,7 +23,10 @@ jobs:
           cache: true
 
       - name: Install Melos
-        run: dart pub global activate melos
+        run: dart pub global activate melos 6.3.0
+
+      - name: Resolve workspace tooling
+        run: dart pub get
 
       - name: Bootstrap workspace
         run: melos bootstrap --ignore-deps
