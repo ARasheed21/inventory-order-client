@@ -1,87 +1,56 @@
-
 # Findings Against Tasks, Implementation Plan, Spec, and Constitution
 
-## Critical Bug
+## Resolution Status
 
 ### 1. Duplicate `RealtimeChannel` Registration Crashes Startup
-- **File:** `core/lib/application/injection.dart:53-55`
-- **Issue:**  
-  `getIt.registerSingleton<RealtimeChannel>(RealtimeChannel(reporter: reporter));` appears twice.  
-  GetIt throws `AssertionError` ("Object with type ... is already registered") when the same type is registered more than once.  
-  As a result, `configureCore()` crashes at runtime on every platform — neither the app nor the web client can start.
-- **Severity:** Critical — the application cannot boot.
+- **Status:** Resolved.
+- **Verification:** `configureCore()` registers `RealtimeChannel` once in `core/lib/application/injection.dart`.
 
-## Significant Bugs
-
-### 2. Web Client Cannot Build – `dart:io` Transitively Imported
-- **File:** `core/lib/core.dart:18` exports `data/network/api_http_client.dart`, which imports `infrastructure/security/certificate_pinning.dart:1` (which imports `dart:io`).  
-  The web client (`web/lib/main.client.dart:6`) imports `package:core/core.dart`.
-- **Issue:**  
-  - `dart:io` is native‑only; `dart2js` stubs it, but `CertificatePinner.install()` directly uses `IOHttpClientAdapter` and `HttpClient`.  
-  - In staging mode (`APP_ENV=staging` — the production web target), `pinnerFromConfig()` returns a non‑null `CertificatePinner`, and `buildDio()` calls `pinnerFromConfig(config)?.install(dio)`, which throws `UnsupportedError` at runtime on web.  
-  - Dev mode works only because `pinnerFromConfig` returns `null` when `isReleaseLike` is `false`.
-- **Severity:** High — the web client crashes in any non‑dev environment when making HTTP requests.
-- **Suggested fix (mentioned in original):** Use conditional imports (`dart:io` vs stub) for certificate pinning, or keep `certificate_pinning.dart` out of the core barrel export and let platform clients import it selectively.
+### 2. Web Client Cannot Build - `dart:io` Transitively Imported
+- **Status:** Resolved.
+- **Verification:** Certificate pinning is app-only in `app/lib/config/certificate_pinning.dart`. Core exposes the platform-neutral `onDioBuilt` hook. `dart analyze` passes for `core`, `app`, and `web`.
 
 ### 3. Integration Tests Silently Swallowed in CI
-- **File:** `.github/workflows/ci.yml:112`
-- **Issue:**  
-  ```yaml
-  run: flutter test integration_test -d headless-web-server || echo "integration suite requires a device target; see quickstart.md"
-  ```
-  The `|| echo` means the step never fails. Integration test failures will not block PRs.
-- **Severity:** High — CI cannot catch integration regressions, undermining quality gates described in the constitution (SC‑006, SC‑007) and tasks T050/T054.
+- **Status:** Resolved.
+- **Verification:** The integration command in `.github/workflows/ci.yml` no longer has an `|| echo` fallback, so test failures fail the job.
 
+## Security Follow-up
 
-## Security Concerns
-
-### 4. Web Credential Store Stores JWTs in JavaScript‑Readable `sessionStorage`
-- **File:** `web/lib/config/credential_store.dart:9-28`
-- **Issue:**  
-  Access tokens and refresh tokens are serialized to `sessionStorage`, which is accessible to any JavaScript running on the page.  
-  The comment at lines 15‑16 acknowledges that `httpOnly` cookies are the production path, but this store **is** the implementation being shipped and demonstrated. Any XSS vulnerability (including from third‑party scripts or browser extensions) exposes all session credentials.  
-  Additionally, `dart:html` (line 5) is deprecated in favor of `package:web`.
-- **Severity:** Medium — acceptable for foundation scaffolding if documented as non‑production, but task notes mark T038 as complete without noting this security limitation.
-
+### 4. Web Credential Store Uses JavaScript-Readable `sessionStorage`
+- **Status:** Foundation limitation remains; production follow-up required.
+- **Current behavior:** `web/lib/config/credential_store.dart` stores both access and refresh tokens in tab-scoped `sessionStorage`. This is JavaScript-readable and must not be treated as the final production credential strategy.
+- **Simple tasks before production:**
+  1. Add a backend/browser session flow that sets the refresh token in an `HttpOnly`, `Secure`, `SameSite` cookie.
+  2. Change web login, refresh, restore, and logout calls to use the cookie flow; do not serialize refresh tokens in browser storage.
+  3. Keep only short-lived access-token state in memory, or use the backend cookie session directly where possible.
+  4. Replace deprecated `dart:html` with `package:web` and `dart:js_interop`.
+  5. Add an integration/security test proving refresh credentials are absent from `sessionStorage` and `localStorage`.
+- **Decision:** Acceptable for this foundation only while the web client is explicitly non-production and this limitation is documented. Complete it before production deployment.
 
 ## Quality Issues
 
 ### 5. Web Home Page Hint Subscription Not Retained
-- **File:** `web/lib/pages/home_page.dart:20,28-30`
-- **Issue:**  
-  ```dart
-  StreamSubscription<RealtimeHint>? _hintSub;  // declared but never assigned
-  // ...
-  getIt<RealtimeChannel>().hints.listen(_onHint);  // subscription discarded
-  ```
-  The `hints.listen()` return value is discarded (suppressed by `// ignore: discarded_futures`). If garbage collected, the listener silently stops receiving hints, defeating the real‑time hint → refetch demonstration (FR‑007).
-- **Severity:** Medium — the hint‑to‑refetch feature (task T047) silently stops working.
+- **Status:** Resolved.
+- **Verification:** `web/lib/pages/home_page.dart` assigns the stream subscription to `_hintSub`.
 
 ### 6. Redundant `kGenerateMode` Check in Web Client
-- **File:** `web/lib/pages/home_page.dart:27`
-- **Issue:**  
-  ```dart
-  if (kGenerateMode || kIsWeb) {
-  ```
-  This is the web client entrypoint — `kIsWeb` is always `true` here. `kGenerateMode` (a Flutter concept) is not meaningful in a pure Jaspr/Dart context. This dead condition adds confusion without effect.
-- **Severity:** Low.
+- **Status:** Resolved.
+- **Verification:** The obsolete condition is no longer present in the web client.
 
 ### 7. `SessionAuthGate` Duplicated Across Clients
-- **Files:** `app/lib/config/session_gate.dart` and `web/lib/config/session_gate.dart`
-- **Issue:** Both define identical `AuthGate` interface and `SessionAuthGate` implementations. The `AuthGate` interface is domain‑level (route guard contract per Constitution VI) but lives in platform packages rather than core. Task T027/T028 mark this as complete, but the shared interface should arguably live in `core` per the constitution's DDD layering.
-- **Severity:** Low — not a bug, but a layering inconsistency.
+- **Status:** Not required for the foundation; optional refactoring.
+- **Reason:** This is duplicated client routing code, not a runtime defect. Keeping route guards in the platform packages avoids adding routing concerns to the shared domain/core API.
+- **Optional refactor:** If shared guard behavior expands, move only the small `AuthGate` contract to a core application contract and keep each platform's `SessionAuthGate` implementation local.
 
+## Task and Spec Alignment
 
-## Task / Spec Alignment
-
-- T001‑T053: All marked `[x]` in the tasks diff. The monorepo structure, core primitives, auth flow, realtime, CI/CD, and release workflow are implemented.
-- T054 (pipeline verification scratch run) is correctly left unchecked — it requires a live CI environment.
-- **Constitution II (FR‑003):** Export integrity test exists and CI step is configured. However, the `dart:io` transitive import (#2 above) means the web client violates the spirit of the clean core boundary.
-- **Constitution IV:** `failure_mapper.dart` correctly maps all `DioExceptionType` cases. No raw exceptions escape repositories.
-- **Constitution VII (FR‑004):** Design tokens are centralized in `core/lib/design/tokens.dart`. Theme binding in `app/lib/config/theme.dart` is clean. The CI lint check for raw color/spacing literals is present.
-- **Constitution VIII (FR‑013):** Certificate pinning is implemented but has the cross‑platform issue described in #2.
+- T001-T053 are marked complete. The monorepo structure, core primitives, auth flow, realtime, CI/CD, and release workflow are implemented.
+- T054 remains unchecked because pipeline scratch verification requires a live CI environment.
+- FR-003 is satisfied: the export-integrity test and CI check exist, and the previous `dart:io` boundary issue is resolved.
+- FR-013 is satisfied for certificate pinning without importing `dart:io` into the shared/web boundary.
+- The web credential storage limitation is documented in the implementation notes and remains the only required production security follow-up.
 
 ## Summary
 
-The most urgent fix is the double `RealtimeChannel` registration (#1) — it prevents the app from starting at all. The `dart:io` transitive import (#2) is the second priority since it breaks web in staging/release mode. The silent CI test swallowing (#3) undermines quality gates that tasks T048‑T050 explicitly require.
+Issues 1, 2, 3, 5, and 6 are resolved. Issue 7 is optional refactoring. Issue 4 is the only remaining security follow-up: replace browser token storage with an HttpOnly cookie-based session before production deployment.
 ---
