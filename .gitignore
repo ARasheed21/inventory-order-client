@@ -60,6 +60,7 @@ pubspec_overrides.yaml
 .env
 .env.*
 !.env.example
+**/config.env
 
 # Build outputs
 app/build/

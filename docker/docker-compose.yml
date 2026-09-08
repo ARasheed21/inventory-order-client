@@ -1,31 +1,23 @@
-version: "3.9"
-
-# Local backend instance for development and integration scenarios (FR-017).
-# The image must match contracts/api/openapi.yaml (Inventory Management System API 0.1.0).
-#
+# Local contract-backed backend for development and integration scenarios (FR-017).
+# The mock implements the authentication endpoints required by integration tests
+# from contracts/api/openapi.yaml, so tests do not depend on a private backend image.
 # Usage:
 #   docker compose -f docker/docker-compose.yml up -d
 #   docker compose -f docker/docker-compose.yml down
 
 services:
   inventory-backend:
-    image: ghcr.io/inventorymanagement/inventory-backend:0.1.0
+    build:
+      context: ..
+      dockerfile: docker/mock-backend/Dockerfile
+    image: inventory-order-contract-backend:local
     container_name: inventory-backend
     ports:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: dev
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "-qO-",
-          "http://localhost:8080/actuator/health",
-          "||",
-          "exit",
-          "1",
-        ]
+      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/actuator/health')\"" ]
       interval: 10s
       timeout: 3s
       retries: 12

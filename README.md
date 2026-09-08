@@ -24,19 +24,30 @@ dart pub global activate melos 6.3.0
 dart pub get
 melos bootstrap
 
-# 3. Create your environment file (never commit it)
-Copy-Item .env.example .env
+# 3. Create the Flutter compile-time environment file (never commit it)
+Copy-Item .env.example app\config.env
 
-# 4. Start the local backend container (FR-017)
-docker compose -f docker/docker-compose.yml up -d
+# 4. Start the local OpenAPI-backed test backend (FR-017)
+docker compose -f docker/docker-compose.yml up -d --build --wait
 
-# 5a. Run the mobile client (from /app)
-flutter run --dart-define-from-file=config.env
-#    (copy .env to app/config.env first — same schema)
+# 5a. Run the mobile client on an Android emulator (from /app)
+#     Android reaches Docker on the host through 10.0.2.2.
+cd app
+flutter run -d emulator-5554 --dart-define-from-file=config.env `
+	--dart-define=API_BASE_URL=http://10.0.2.2:8080 `
+	--dart-define=WS_URL=ws://10.0.2.2:8080/api/ws/websocket
 
 # 5b. Run the web client (from /web)
-cp web/env.example.json web/web/env.json   # adjust values as needed
+cd ..\web
+Copy-Item env.example.json env.json
 jaspr serve
+
+# 5c. Run Android integration tests
+cd ..\app
+flutter test integration_test -d emulator-5554 `
+	--dart-define-from-file=config.env `
+	--dart-define=API_BASE_URL=http://10.0.2.2:8080 `
+	--dart-define=WS_URL=ws://10.0.2.2:8080/api/ws/websocket
 ```
 
 ## Common tasks
@@ -44,8 +55,8 @@ jaspr serve
 ```powershell
 melos analyze       # analyzer across all packages (must be clean)
 melos format        # formatting check
-dart test           # core unit tests (run from core/)
-flutter test        # widget tests (run from app/)
+melos run test      # core/web Dart tests
+melos run flutter_test # Flutter widget tests
 ```
 
 ## Quality gates

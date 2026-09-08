@@ -4,7 +4,8 @@
 /// Requires the local backend container (FR-017):
 ///   docker compose -f docker/docker-compose.yml up -d
 ///
-/// Run: flutter test integration_test --dart-define-from-file=config.env
+/// Android run: add --dart-define=API_BASE_URL=http://10.0.2.2:8080 because
+/// Android emulator localhost points to the emulator, not the host machine.
 library;
 
 import 'package:fpdart/fpdart.dart' show Either;
@@ -46,7 +47,8 @@ void main() {
           'register failed: ${registered.fold((f) => f.userMessage, (_) => '')}',
     );
 
-    // Simulate app restart: fresh repository reading persisted credentials.
+    // Simulate app restart by clearing the in-memory session and storage.
+    await repo.logout();
     await store.clear();
     final restoredRepo = getIt<AuthRepository>();
     expect(restoredRepo.current, isNull);

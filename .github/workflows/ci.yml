@@ -110,9 +110,19 @@ jobs:
           cp ../.env.example config.env
           flutter pub get
 
-      - name: Run integration journeys (Android emulator-free, headless)
-        working-directory: app
-        run: flutter test integration_test -d headless-web-server
+      - name: Run integration journeys on Android emulator
+        uses: ReactiveCircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          script: |
+            cd app
+            cp ../.env.example config.env
+            flutter test integration_test -d emulator-5554 \
+              --dart-define-from-file=config.env \
+              --dart-define=API_BASE_URL=http://10.0.2.2:8080 \
+              --dart-define=WS_URL=ws://10.0.2.2:8080/api/ws/websocket
 
       - name: Stop backend container
         if: always()
