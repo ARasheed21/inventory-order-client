@@ -63,8 +63,13 @@ jobs:
       - name: Enforce Conventional Commits (PR title)
         if: github.event_name == 'pull_request'
         run: |
-          echo "${{ github.event.pull_request.title }}" | \
-            grep -qE "^(feat|fix|chore|docs|refactor|test|build|ci|perf|style|revert)(\(.+\))?!?: .+"
+          title="${{ github.event.pull_request.title }}"
+          if ! printf '%s\n' "$title" | \
+            grep -qE "^(feat|fix|chore|docs|refactor|test|build|ci|perf|style|revert)(\(.+\))?!?: .+"; then
+            echo "::error::PR title '$title' is not a Conventional Commit."
+            echo "Use a title such as 'feat: project foundation' or 'chore: project foundation'."
+            exit 1
+          fi
 
       - name: Run core unit tests
         working-directory: core
