@@ -44,6 +44,10 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# The Flutter app lives under app/; root platform folders are local artifacts.
+/android/
+/ios/
+
 \.agents
 \.claude
 \.delegate
