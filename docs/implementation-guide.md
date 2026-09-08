@@ -47,12 +47,18 @@ This guide provides the specific libraries, folder structures, and code patterns
 ## 3. Data Layer (Tools & Patterns)
 - **HTTP Client**: [`Dio`](https://pub.dev/packages/dio).
   - *Interceptors*: JWT injection, automatic 401 token refresh, logging (dev), error mapping.
-- **Local Database**: [`Drift`](https://drift.simonbinder.eu/) (SQLite).
-  - Use stream queries for reactive UI.
-  - Use transactions for atomic writes.
-  - Tables must mirror backend entities with appropriate indexes.
+- **Local Database (DEFERRED)**: [`Drift`](https://drift.simonbinder.eu/) (SQLite) is the
+  designated persistence tool for feature epics that need an offline store. The foundation
+  itself ships with **in-memory, session-scoped caching only** (`core/data/cache/`) — see
+  spec 001-project-foundation FR-011. Do not introduce Drift until a feature epic requires
+  persistent offline data.
+  - When introduced: use stream queries for reactive UI, transactions for atomic writes,
+    and mirror backend entities with appropriate indexes.
 - **Result Handling**: Use [`fpdart`](https://pub.dev/packages/fpdart) `Either<Failure, T>` for repository returns.
-- **Real-Time**: STOMP over WebSocket (custom client). Connect after Auth, subscribe to `/user/queue/orders` and `/topic/orders`.
+- **Real-Time**: STOMP over WebSocket. Connect after Auth, subscribe to `/user/queue/orders`
+  and `/topic/orders/{orderId}`. Mobile: `stomp_dart_client` over raw WebSocket; web:
+  `stompjs` + `sockjs-client`. Shared lifecycle in `core/data/realtime/`; pushes are hints —
+  re-fetch authoritative data over REST after each push.
 
 ---
 

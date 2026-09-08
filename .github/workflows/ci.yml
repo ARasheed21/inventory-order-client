@@ -1,0 +1,149 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Melos
+        run: dart pub global activate melos 6.3.0
+
+      - name: Resolve workspace tooling
+        run: dart pub get
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      - name: Analyze
+        run: melos exec -- dart analyze .
+
+      - name: Verify formatting
+        run: melos exec -- dart format --set-exit-if-changed --output=none .
+
+      # FR-003 / Constitution II: clients may only import package:core/core.dart.
+      - name: Enforce core export integrity
+        run: |
+          violations=$(grep -rE "package:core/([a-z_/]+\.dart)" app/lib web/lib \
+            | grep -v "package:core/core.dart" || true)
+          if [ -n "$violations" ]; then
+            echo "::error::Internal core module imports detected:"
+            echo "$violations"
+            exit 1
+          fi
+
+      # SC-003: no raw style literals outside core design tokens.
+      - name: Enforce design-token usage (no raw style constants)
+        run: |
+          violations=$(grep -rnE "Color\(0x[0-9A-Fa-f]{8}\)|#[0-9A-Fa-f]{6}\b" \
+            app/lib/features web/lib/pages web/lib/components 2>/dev/null || true)
+          if [ -n "$violations" ]; then
+            echo "::error::Raw style literals found outside token definitions:"
+            echo "$violations"
+            exit 1
+          fi
+
+      # Constitution XI: Conventional Commits for automated versioning.
+      - name: Enforce Conventional Commits (PR title)
+        if: github.event_name == 'pull_request'
+        run: |
+          title="${{ github.event.pull_request.title }}"
+          if ! printf '%s\n' "$title" | \
+            grep -qE "^(feat|fix|chore|docs|refactor|test|build|ci|perf|style|revert)(\(.+\))?!?: .+"; then
+            echo "::error::PR title '$title' is not a Conventional Commit."
+            echo "Use a title such as 'feat: project foundation' or 'chore: project foundation'."
+            exit 1
+          fi
+
+      - name: Run core unit tests
+        working-directory: core
+        run: dart test --coverage=coverage
+
+      # FR-012: shared-core coverage must stay >= 75%.
+      - name: Check core coverage >= 75%
+        working-directory: core
+        run: |
+          dart pub global activate coverage
+          dart pub global run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib --check-ignore
+          total=$(grep -c "^DA:" coverage/lcov.info || echo 0)
+          hits=$(awk -F, '/^DA:/ {if ($2>0) count++} END {print count+0}' coverage/lcov.info)
+          echo "covered lines: $hits / $total"
+          if [ "$total" -gt 0 ] && [ "$hits" -lt $(( total * 75 / 100 )) ]; then
+            echo "::error::Core coverage below 75%"
+            exit 1
+          fi
+
+      - name: Run Flutter widget tests
+        working-directory: app
+        run: flutter test
+
+  integration:
+    # Temporarily skip integration for all pull requests. Re-enable this job
+    # when the Android emulator workflow is ready for PR validation again.
+    if: github.event_name == 'push'
+    # # Run the expensive device/backend suite only for protected release targets.
+    # # Quality still runs for every pull request, including PRs targeting develop
+    # # or any other branch.
+    # if: >-
+    #   github.event_name == 'push' ||
+    #   (github.event_name == 'pull_request' &&
+    #   (github.event.pull_request.base.ref == 'main' ||
+    #   github.event.pull_request.base.ref == 'master'))
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # FR-017: integration scenarios run against the locally launched backend.
+      - name: Start backend container
+        run: docker compose -f docker/docker-compose.yml up -d --wait
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Prepare environment
+        working-directory: app
+        run: |
+          cp ../.env.example config.env
+          flutter pub get
+
+      - name: Run integration journeys on Android emulator
+        uses: ReactiveCircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot
+          disable-animations: true
+          script: |
+            cd "$GITHUB_WORKSPACE/app" && cp "$GITHUB_WORKSPACE/.env.example" config.env && flutter test integration_test/auth_flow_test.dart integration_test/error_recovery_test.dart -d emulator-5554 \
+              --dart-define-from-file=config.env \
+              --dart-define=API_BASE_URL=http://10.0.2.2:8080 \
+              --dart-define=WS_URL=ws://10.0.2.2:8080/api/ws/websocket
+
+      - name: Stop backend container
+        if: always()
+        run: docker compose -f docker/docker-compose.yml down
