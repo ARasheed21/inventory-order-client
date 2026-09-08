@@ -11,6 +11,7 @@ services:
       context: ..
       dockerfile: docker/mock-backend/Dockerfile
     image: inventory-order-contract-backend:local
+    pull_policy: never
     container_name: inventory-backend
     ports:
       - "8080:8080"

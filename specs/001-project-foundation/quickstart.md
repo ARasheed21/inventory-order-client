@@ -14,7 +14,7 @@ backend, quality gates passing.
 ## 1. Workspace setup (< 15 minutes total, SC-001)
 
 ```powershell
-git clone <repo-url>
+git clone --recurse-submodules <repo-url>
 cd inventory-order-client
 dart pub global activate melos 6.3.0
 dart pub get

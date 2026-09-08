@@ -18,6 +18,8 @@ contributing.
 
 ```powershell
 # 1. Install prerequisites: Flutter SDK (stable), Docker Desktop
+# Clone with the OpenAPI contracts submodule:
+# git clone --recurse-submodules <repo-url>
 dart pub global activate melos 6.3.0
 
 # 2. Bootstrap the workspace

@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Dart
         uses: dart-lang/setup-dart@v1
@@ -106,6 +108,8 @@ jobs:
     needs: quality
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       # FR-017: integration scenarios run against the locally launched backend.
       - name: Start backend container
