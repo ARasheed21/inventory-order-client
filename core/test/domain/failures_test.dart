@@ -11,6 +11,7 @@ void main() {
         AuthorizationFailure(),
         ServerFailure(),
         ValidationFailure(),
+        RateLimitedFailure(),
         UnknownFailure(),
       ];
       for (final Failure f in failures) {
@@ -38,6 +39,7 @@ void main() {
         AuthorizationFailure() => 'authorization',
         ServerFailure() => 'server',
         ValidationFailure() => 'validation',
+        RateLimitedFailure() => 'rateLimited',
         UnknownFailure() => 'unknown',
       };
       expect(describe(const NetworkFailure()), 'network');

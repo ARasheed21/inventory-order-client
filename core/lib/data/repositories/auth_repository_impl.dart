@@ -6,6 +6,7 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../infrastructure/observability/reporter.dart';
 import '../../domain/entities/session.dart';
+import '../cache/session_cache.dart';
 import '../../domain/failures.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../network/generated/src/api/authentication_api.dart';
@@ -26,12 +27,15 @@ final class AuthRepositoryImpl implements AuthRepository, SessionCredentials {
   AuthRepositoryImpl({
     required Dio dio,
     required this.credentialStore,
+    SessionCache? sessionCache,
     Reporter reporter = const ConsoleReporter(),
-  }) : _authenticationApi = AuthenticationApi(dio, standardSerializers),
-       _reporter = reporter;
+  })  : _authenticationApi = AuthenticationApi(dio, standardSerializers),
+        _reporter = reporter,
+        _sessionCache = sessionCache;
 
   final AuthenticationApi _authenticationApi;
   final CredentialStore credentialStore;
+  final SessionCache? _sessionCache;
   final Reporter _reporter;
 
   Session? _current;
@@ -112,6 +116,7 @@ final class AuthRepositoryImpl implements AuthRepository, SessionCredentials {
     final Session? stored = await credentialStore.load();
     if (stored != null && _current == null) {
       _current = stored;
+      _sessionCache?.session = stored;
       _sessionStream.add(stored);
     }
   }
@@ -119,6 +124,7 @@ final class AuthRepositoryImpl implements AuthRepository, SessionCredentials {
   @override
   Future<Either<Failure, void>> logout() async {
     await credentialStore.clear();
+    _sessionCache?.clear();
     _current = null;
     _sessionStream.add(null);
     return const Right<Failure, void>(null);
@@ -167,6 +173,7 @@ final class AuthRepositoryImpl implements AuthRepository, SessionCredentials {
 
   Future<void> _persist(Session session) async {
     _current = session;
+    _sessionCache?.session = session;
     await credentialStore.save(session);
     _sessionStream.add(session);
   }

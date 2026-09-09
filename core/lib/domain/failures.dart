@@ -48,6 +48,15 @@ final class ValidationFailure extends Failure {
   final Map<String, String> fields;
 }
 
+final class RateLimitedFailure extends Failure {
+  const RateLimitedFailure({this.retryAfter})
+    : super(StringsError.rateLimited);
+
+  /// Server-advertised retry window from `Retry-After` header.
+  /// `null` means generic 60 s default per clarification Q4.
+  final Duration? retryAfter;
+}
+
 final class UnknownFailure extends Failure {
   const UnknownFailure({String? message})
     : super(message ?? StringsError.unknown);
@@ -64,6 +73,7 @@ abstract final class StringsError {
   static const String server =
       'Something went wrong on our side. Please try again.';
   static const String validation = 'Please review the highlighted fields.';
+  static const String rateLimited = 'Too many attempts. Please try again.';
   static const String unknown =
       'Something unexpected happened. Please try again.';
 }

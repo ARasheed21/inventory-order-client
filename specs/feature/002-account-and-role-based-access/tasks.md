@@ -27,11 +27,11 @@
 
 **Purpose**: Project initialization and auth scaffolding (no business logic yet)
 
-- [ ] T001 Create feature working directory and verify branch `feature/002-account-and-role-based-access` with contracts copy
-- [ ] T002 Run `melos bootstrap` and confirm `core/app/web` dependencies resolve per `melos.yaml`
-- [ ] T003 [P] Configure `core/lib/core.dart` public barrel to export new `auth` domain/application symbols (no internal `src/` imports allowed per constitution II)
-- [ ] T004 [P] Add auth string keys to `core/lib/constants/strings.dart` (registration, login, validation messages, rate-limit, permission-denied) per constitution i18n structure
-- [ ] T005 Verify Docker backend available via `docker compose -f docker/docker-compose.yml up -d` and `curl -s http://localhost:8080/health`
+- [X] T001 Create feature working directory and verify branch `feature/002-account-and-role-based-access` with contracts copy
+- [X] T002 Run `melos bootstrap` and confirm `core/app/web` dependencies resolve per `melos.yaml`
+- [X] T003 [P] Configure `core/lib/core.dart` public barrel to export new `auth` domain/application symbols (no internal `src/` imports allowed per constitution II)
+- [X] T004 [P] Add auth string keys to `core/lib/constants/strings.dart` (registration, login, validation messages, rate-limit, permission-denied) per constitution i18n structure
+- [X] T005 Verify Docker backend available via `docker compose -f docker/docker-compose.yml up -d` and `curl -s http://localhost:8080/health`
 
 ---
 
@@ -41,17 +41,17 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T006 Create sealed `Failure` hierarchy extension with `RateLimitedFailure(retryAfter: Duration?)` in `core/lib/domain/failures.dart`
-- [ ] T007 Create sealed `AsyncState<T>` reuse wrapper if not already present in `core/lib/domain/async_state.dart` (Loading/Data/Error per constitution III)
-- [ ] T008 [P] Implement `CredentialStorage` abstraction in `core/lib/infrastructure/security/credential_storage.dart`
-- [ ] T009 [P] Implement mobile `SecureStorageMobile` via `flutter_secure_storage` in `core/lib/infrastructure/security/secure_storage_mobile.dart`
-- [ ] T010 [P] Implement web `SecureStorageWeb` with httpOnly cookie preference and encrypted localStorage fallback (Web Crypto) in `core/lib/infrastructure/security/secure_storage_web.dart`
-- [ ] T011 Extend `Dio` singleton with base config in `core/lib/data/network/dio_client.dart` (timeouts, baseUrl from `.env`, certificate validation per implementation-guide §7)
-- [ ] T012 Implement `ErrorMapper` mapping 400→ValidationFailure, 401→AuthenticationFailure, 403→AuthorizationFailure, 409→ValidationFailure, 429→RateLimitedFailure (parse `Retry-After` seconds or HTTP-date), 5xx→ServerFailure, network→NetworkFailure in `core/lib/data/network/error_mapper.dart`
-- [ ] T013 Implement `AuthInterceptor` skeleton with JWT injection (read accessToken from storage) and placeholder for single-flight refresh in `core/lib/data/network/auth_interceptor.dart`
-- [ ] T014 [P] Implement in-memory `SessionCache` for `Session` and `AsyncState<Profile>` with stale flag in `core/lib/data/cache/session_cache.dart`
-- [ ] T015 Register core auth bindings (storage, dio, cache) in `core/lib/application/injection.dart` via `get_it` (platform-specific registrations remain in `app/lib/main.dart` and `web/lib/main.dart`)
-- [ ] T016 Configure `Auth` observability helper with structured events (`login_attempt`, `register_validation_failed`, `refresh_succeeded`, `rate_limited`) without logging tokens in `core/lib/infrastructure/observability/auth_logging.dart`
+- [X] T006 Create sealed `Failure` hierarchy extension with `RateLimitedFailure(retryAfter: Duration?)` in `core/lib/domain/failures.dart`
+- [X] T007 Create sealed `AsyncState<T>` reuse wrapper if not already present in `core/lib/domain/async_state.dart` (Loading/Data/Error per constitution III)
+- [X] T008 [P] Implement `CredentialStorage` abstraction in `core/lib/infrastructure/security/credential_storage.dart`
+- [X] T009 [P] Implement mobile `SecureStorageMobile` via `flutter_secure_storage` in `core/lib/infrastructure/security/secure_storage_mobile.dart`
+- [X] T010 [P] Implement web `SecureStorageWeb` with httpOnly cookie preference and encrypted localStorage fallback (Web Crypto) in `core/lib/infrastructure/security/secure_storage_web.dart`
+- [X] T011 Extend `Dio` singleton with base config in `core/lib/data/network/dio_client.dart` (timeouts, baseUrl from `.env`, certificate validation per implementation-guide §7)
+- [X] T012 Implement `ErrorMapper` mapping 400→ValidationFailure, 401→AuthenticationFailure, 403→AuthorizationFailure, 409→ValidationFailure, 429→RateLimitedFailure (parse `Retry-After` seconds or HTTP-date), 5xx→ServerFailure, network→NetworkFailure in `core/lib/data/network/error_mapper.dart`
+- [X] T013 Implement `AuthInterceptor` skeleton with JWT injection (read accessToken from storage) and placeholder for single-flight refresh in `core/lib/data/network/auth_interceptor.dart`
+- [X] T014 [P] Implement in-memory `SessionCache` for `Session` and `AsyncState<Profile>` with stale flag in `core/lib/data/cache/session_cache.dart`
+- [X] T015 Register core auth bindings (storage, dio, cache) in `core/lib/application/injection.dart` via `get_it` (platform-specific registrations remain in `app/lib/main.dart` and `web/lib/main.dart`)
+- [X] T016 Configure `Auth` observability helper with structured events (`login_attempt`, `register_validation_failed`, `refresh_succeeded`, `rate_limited`) without logging tokens in `core/lib/infrastructure/observability/auth_logging.dart`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin (storage, network, error abstraction, cache, DI all verifiable via unit test)
 

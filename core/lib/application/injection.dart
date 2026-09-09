@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 
 import '../data/cache/read_cache.dart';
+import '../data/cache/session_cache.dart';
 import '../data/network/api_http_client.dart';
 import '../data/realtime/realtime_channel.dart';
 import '../data/repositories/auth_repository_impl.dart';
@@ -34,6 +35,7 @@ Future<void> configureCore({
   getIt.registerSingleton<Reporter>(reporter);
   getIt.registerSingleton<CredentialStore>(credentialStore);
   getIt.registerSingleton<ReadCache>(InMemoryReadCache());
+  getIt.registerSingleton<SessionCache>(SessionCache());
 
   final AuthRepositoryImpl repository = AuthRepositoryImpl(
     dio: buildDio(
@@ -43,6 +45,7 @@ Future<void> configureCore({
       onDioBuilt: onDioBuilt,
     ),
     credentialStore: credentialStore,
+    sessionCache: getIt<SessionCache>(),
     reporter: reporter,
   );
 

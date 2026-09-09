@@ -30,13 +30,37 @@ final class AuthStrings {
 
   String get usernameLabel => 'Username';
 
+  String get usernameHint => '3–30 characters, letters, digits, dot, underscore or hyphen';
+
+  String get usernameValidation =>
+      'Username must be 3–30 characters, letters, digits, dot, underscore or hyphen only';
+
   String get emailLabel => 'Email';
 
+  String get emailInvalid => 'Please enter a valid email address';
+
   String get passwordLabel => 'Password';
+
+  String get passwordHint => 'At least 8 characters with a letter and a digit';
+
+  String get passwordValidation =>
+      'Password must be 8–128 characters and contain a letter and a digit';
 
   String get signInAction => 'Sign in';
 
   String get registerAction => 'Register';
+
+  String get alreadyRegistered => 'Username or email already registered.';
+
+  String get invalidCredentials => 'Invalid username or password.';
+
+  String get rateLimited => 'Too many attempts. Try again in %s seconds.';
+
+  String get sessionExpired => 'Your session has expired. Please sign in again.';
+
+  String get permissionDenied => "You don't have permission to do that.";
+
+  String get requiredField => 'This field is required';
 }
 
 final class HomeStrings {

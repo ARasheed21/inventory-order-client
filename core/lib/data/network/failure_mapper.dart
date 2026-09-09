@@ -38,7 +38,50 @@ Failure _mapResponse(DioException error) {
   if (status == 403) {
     return const AuthorizationFailure();
   }
+  if (status == 409) {
+    final Map<String, String> fields = _extractFields(error.response);
+    if (fields.isEmpty) {
+      return const ValidationFailure(
+        fields: <String, String>{
+          'username': 'Username or email already registered.',
+          'email': 'Username or email already registered.',
+        },
+      );
+    }
+    return ValidationFailure(fields: fields);
+  }
+  if (status == 429) {
+    return RateLimitedFailure(retryAfter: _parseRetryAfter(error.response));
+  }
+  if (status != null && status >= 500) {
+    return const ServerFailure();
+  }
+  if (status != null && status >= 400) {
+    return ValidationFailure(fields: _extractFields(error.response));
+  }
   return const ServerFailure();
+}
+
+Duration? _parseRetryAfter(Response<dynamic>? response) {
+  final Map<String, List<String>> headers = response?.headers.map ?? const {};
+  String? raw;
+  for (final entry in headers.entries) {
+    if (entry.key.toLowerCase() == 'retry-after' && entry.value.isNotEmpty) {
+      raw = entry.value.first;
+      break;
+    }
+  }
+  if (raw == null) return const Duration(seconds: 60);
+  final String value = raw.trim();
+  final int? seconds = int.tryParse(value);
+  if (seconds != null) return Duration(seconds: seconds);
+  try {
+    final DateTime date = DateTime.parse(value).toUtc();
+    final Duration diff = date.difference(DateTime.now().toUtc());
+    return diff.isNegative ? const Duration(seconds: 60) : diff;
+  } catch (_) {
+    return const Duration(seconds: 60);
+  }
 }
 
 Map<String, String> _extractFields(Response<dynamic>? response) {

@@ -15,7 +15,10 @@ export 'constants/strings.dart';
 
 // Data ports.
 export 'data/cache/read_cache.dart';
+export 'data/cache/session_cache.dart';
 export 'data/network/api_http_client.dart';
+export 'data/network/auth_interceptor.dart';
+export 'data/network/failure_mapper.dart';
 export 'data/realtime/hint.dart';
 export 'data/realtime/realtime_channel.dart';
 
@@ -29,5 +32,9 @@ export 'domain/repositories/auth_repository.dart';
 export 'domain/repositories/order_repository.dart';
 export 'domain/resource_key.dart';
 
-// Infrastructure observability facade.
+// Infrastructure facades.
 export 'infrastructure/observability/reporter.dart';
+export 'infrastructure/observability/auth_logging.dart';
+export 'infrastructure/security/credential_storage.dart';
+export 'infrastructure/security/secure_storage_mobile.dart';
+export 'infrastructure/security/secure_storage_web.dart';

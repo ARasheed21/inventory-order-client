@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../application/env_config.dart';
 import '../../infrastructure/observability/reporter.dart';
+import 'auth_interceptor.dart';
 
 /// Source of session credentials for request signing and renewal.
 abstract interface class SessionCredentials {
@@ -29,12 +30,6 @@ Dio buildDio({
   Reporter reporter = const ConsoleReporter(),
   void Function(Dio dio)? onDioBuilt,
 }) {
-  const List<String> unauthenticatedPaths = <String>[
-    '/auth/login',
-    '/auth/register',
-    '/auth/refresh',
-  ];
-
   final Dio dio = Dio(
     BaseOptions(
       baseUrl: config.apiBaseUrl.toString(),
@@ -43,41 +38,14 @@ Dio buildDio({
     ),
   );
 
-  dio.interceptors.addAll(<Interceptor>[
-    InterceptorsWrapper(
-      onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
-        final bool protected = !unauthenticatedPaths.any(options.path.contains);
-        final String? token = credentials.accessToken;
-        if (protected && token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
-        }
-        handler.next(options);
-      },
-      onError: (DioException error, ErrorInterceptorHandler handler) async {
-        final int? status = error.response?.statusCode;
-        final bool protected = !unauthenticatedPaths.any(
-          error.requestOptions.path.contains,
-        );
-        if (status == 401 &&
-            protected &&
-            error.requestOptions.extra['_retried'] != true) {
-          final String? renewed = await credentials.renewAccessToken();
-          if (renewed != null) {
-            try {
-              final RequestOptions retry = error.requestOptions
-                ..extra['_retried'] = true
-                ..headers['Authorization'] = 'Bearer $renewed';
-              final Response<dynamic> response = await dio.fetch(retry);
-              return handler.resolve(response);
-            } on DioException catch (_) {
-              return handler.next(error);
-            }
-          }
-        }
-        handler.next(error);
-      },
+  dio.interceptors.add(
+    AuthInterceptor(
+      dio: dio,
+      getAccessToken: () async => credentials.accessToken,
+      renewAccessToken: () => credentials.renewAccessToken(),
+      reporter: reporter,
     ),
-  ]);
+  );
 
   if (!config.isReleaseLike) {
     dio.interceptors.add(
