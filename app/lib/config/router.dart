@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/auth_screen.dart';
+import '../features/auth/presentation/screens/registration_screen.dart';
 import '../features/home/home_screen.dart';
 
 /// Declarative navigation shell with authentication guards (FR-005).
@@ -44,7 +45,7 @@ GoRouter buildAppRouter(AuthGate gate, {Listenable? refreshListenable}) =>
           path: '/register',
           name: 'register',
           builder: (BuildContext context, GoRouterState state) =>
-              const AuthScreen(mode: AuthMode.register),
+              const RegistrationScreen(),
         ),
       ],
     );

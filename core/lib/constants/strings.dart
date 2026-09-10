@@ -61,6 +61,10 @@ final class AuthStrings {
   String get permissionDenied => "You don't have permission to do that.";
 
   String get requiredField => 'This field is required';
+
+  String get registerSuccess => 'Account created — welcome!';
+
+  String get emailHint => 'alice@example.com';
 }
 
 final class HomeStrings {

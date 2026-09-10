@@ -1,7 +1,77 @@
+import 'dart:convert';
+
 import 'package:meta/meta.dart';
 
 /// Authorization roles carried by a session (Constitution VI).
 enum Role { customer, warehouse, admin }
+
+/// Parses [Role] from a payload map that may contain `roles`, `role`,
+/// `authorities`, `authority`, or JWT `accessToken` claims.
+///
+/// Priority: ADMIN > WAREHOUSE > CUSTOMER. Used by `AuthRepositoryImpl`
+/// and tested directly for integration coverage (T032-like).
+Role parseRoleFromPayload(Map<String, dynamic> payload) {
+  final List<String> candidates = <String>[];
+  void addFrom(dynamic value) {
+    if (value is String && value.trim().isNotEmpty) {
+      candidates.add(value);
+    } else if (value is List) {
+      for (final dynamic e in value) {
+        if (e is String && e.trim().isNotEmpty) {
+          candidates.add(e);
+        } else if (e is Map && e['authority'] is String) {
+          candidates.add(e['authority'] as String);
+        } else if (e is Map && e['role'] is String) {
+          candidates.add(e['role'] as String);
+        }
+      }
+    } else if (value is Map && value['authority'] is String) {
+      candidates.add(value['authority'] as String);
+    }
+  }
+
+  addFrom(payload['roles']);
+  addFrom(payload['role']);
+  addFrom(payload['authorities']);
+  addFrom(payload['authority']);
+  addFrom(payload['userRoles']);
+
+  if (candidates.isEmpty) {
+    final String access = '${payload['accessToken'] ?? ''}';
+    candidates.addAll(_rolesFromJwt(access));
+  }
+
+  bool hasAdmin = false;
+  bool hasWarehouse = false;
+  for (final String raw in candidates) {
+    final String normalized =
+        raw.trim().toUpperCase().replaceFirst(RegExp(r'^ROLE_'), '');
+    if (normalized == 'ADMIN') hasAdmin = true;
+    if (normalized == 'WAREHOUSE') hasWarehouse = true;
+  }
+  if (hasAdmin) return Role.admin;
+  if (hasWarehouse) return Role.warehouse;
+  return Role.customer;
+}
+
+List<String> _rolesFromJwt(String token) {
+  try {
+    final List<String> parts = token.split('.');
+    if (parts.length != 3) return const [];
+    final String payload = parts[1];
+    String normalized = payload.replaceAll('-', '+').replaceAll('_', '/');
+    while (normalized.length % 4 != 0) {
+      normalized += '=';
+    }
+    final String decoded = utf8.decode(base64Decode(normalized));
+    final Map<String, dynamic> json =
+        Map<String, dynamic>.from(jsonDecode(decoded) as Map);
+    final dynamic roles = json['roles'] ?? json['authorities'] ?? json['role'];
+    if (roles is List) return roles.map((e) => '$e').toList();
+    if (roles is String) return <String>[roles];
+  } catch (_) {}
+  return const [];
+}
 
 /// Authenticated identity + credentials held for the current user.
 ///

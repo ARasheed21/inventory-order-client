@@ -65,24 +65,24 @@
 
 ### Tests for User Story 1
 
-- [ ] T017 [P] [US1] Unit test `Username` value object validation (3-30 charset, trim, sanitization, error messages) in `core/test/domain/value_objects/username_test.dart`
-- [ ] T018 [P] [US1] Unit test `Email` and `Password` value objects in `core/test/domain/value_objects/email_password_test.dart`
-- [ ] T019 [P] [US1] Unit test `Account` and `ValidationFailure` invariants in `core/test/domain/entities/account_test.dart`
-- [ ] T020 [P] [US1] Widget test registration form shows loading/disabled submit, field-inline errors, and 409 banner in `app/test/features/auth/registration_screen_test.dart`
+- [X] T017 [P] [US1] Unit test `Username` value object validation (3-30 charset, trim, sanitization, error messages) in `core/test/domain/value_objects/username_test.dart`
+- [X] T018 [P] [US1] Unit test `Email` and `Password` value objects in `core/test/domain/value_objects/email_password_test.dart`
+- [X] T019 [P] [US1] Unit test `Account` and `ValidationFailure` invariants in `core/test/domain/entities/account_test.dart`
+- [X] T020 [P] [US1] Widget test registration form shows loading/disabled submit, field-inline errors, and 409 banner in `app/test/features/auth/registration_screen_test.dart`
 
 ### Implementation for User Story 1
 
-- [ ] T021 [P] [US1] Create `Username` value object with `validate()` returning `Either<ValidationFailure,Username>` in `core/lib/domain/value_objects/username.dart`
-- [ ] T022 [P] [US1] Create `Email` value object in `core/lib/domain/value_objects/email.dart`
-- [ ] T023 [P] [US1] Create `Password` value object (SecretString, ≥8 letter+digit, redacted toString) in `core/lib/domain/value_objects/password.dart`
-- [ ] T024 [P] [US1] Create `Account` and `Profile` entities in `core/lib/domain/entities/account.dart` and `core/lib/domain/entities/profile.dart`
-- [ ] T025 [US1] Create `AuthRepository` interface declaring `register(username,email,password)` → `Either<Failure,Session>` in `core/lib/domain/repositories/auth_repository.dart`
-- [ ] T026 [US1] Generate/wrap OpenAPI client DTOs and implement `AuthRemoteDataSource.register` in `core/lib/data/datasources/auth_remote_datasource.dart`
-- [ ] T027 [US1] Implement `AuthRepositoryImpl.register` mapping DTO→entity, validating via value objects pre-call and mapping 400/409 via `ErrorMapper` in `core/lib/data/repositories/auth_repository_impl.dart`
-- [ ] T028 [US1] Implement `AuthNotifier` + `AuthState` sealed union covering `initial/authenticating/authenticated/failure` in `core/lib/application/providers/auth_provider.dart`
-- [ ] T029 [US1] Create reusable `AuthFormField` widget with token styling and i18n keys in `app/lib/features/auth/presentation/widgets/auth_form_field.dart`
-- [ ] T030 [US1] Implement `RegistrationScreen` with username/email/password fields, inline errors, disabled submit + spinner while `authenticating`, success snackbar and 409/400 banners in `app/lib/features/auth/presentation/screens/registration_screen.dart`
-- [ ] T031 [US1] Export new auth symbols via `core/lib/core.dart` barrel and verify no internal `src/` import violations
+- [X] T021 [P] [US1] Create `Username` value object with `validate()` returning `Either<ValidationFailure,Username>` in `core/lib/domain/value_objects/username.dart`
+- [X] T022 [P] [US1] Create `Email` value object in `core/lib/domain/value_objects/email.dart`
+- [X] T023 [P] [US1] Create `Password` value object (SecretString, ≥8 letter+digit, redacted toString) in `core/lib/domain/value_objects/password.dart`
+- [X] T024 [P] [US1] Create `Account` and `Profile` entities in `core/lib/domain/entities/account.dart` and `core/lib/domain/entities/profile.dart`
+- [X] T025 [US1] Create `AuthRepository` interface declaring `register(username,email,password)` → `Either<Failure,Session>` in `core/lib/domain/repositories/auth_repository.dart`
+- [X] T026 [US1] Generate/wrap OpenAPI client DTOs and implement `AuthRemoteDataSource.register` in `core/lib/data/datasources/auth_remote_datasource.dart`
+- [X] T027 [US1] Implement `AuthRepositoryImpl.register` mapping DTO→entity, validating via value objects pre-call and mapping 400/409 via `ErrorMapper` in `core/lib/data/repositories/auth_repository_impl.dart`
+- [X] T028 [US1] Implement `AuthNotifier` + `AuthState` sealed union covering `initial/authenticating/authenticated/failure` in `core/lib/application/providers/auth_provider.dart`
+- [X] T029 [US1] Create reusable `AuthFormField` widget with token styling and i18n keys in `app/lib/features/auth/presentation/widgets/auth_form_field.dart`
+- [X] T030 [US1] Implement `RegistrationScreen` with username/email/password fields, inline errors, disabled submit + spinner while `authenticating`, success snackbar and 409/400 banners in `app/lib/features/auth/presentation/screens/registration_screen.dart`
+- [X] T031 [US1] Export new auth symbols via `core/lib/core.dart` barrel and verify no internal `src/` import violations
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and independently testable (registration happy path + validation + conflict, auto-login, routing to catalog)
 

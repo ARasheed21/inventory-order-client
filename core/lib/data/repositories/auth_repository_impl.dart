@@ -6,6 +6,9 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../infrastructure/observability/reporter.dart';
 import '../../domain/entities/session.dart';
+import '../../domain/value_objects/email.dart';
+import '../../domain/value_objects/password.dart';
+import '../../domain/value_objects/username.dart';
 import '../cache/session_cache.dart';
 import '../../domain/failures.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -82,6 +85,23 @@ final class AuthRepositoryImpl implements AuthRepository, SessionCredentials {
     String email,
     String password,
   ) async {
+    // Client-side validation per FR-002 before network call (T027).
+    final Map<String, String> fieldErrors = {};
+    Username.validate(username).fold(
+      (ValidationFailure f) => fieldErrors.addAll(f.fields),
+      (_) {},
+    );
+    Email.validate(email).fold(
+      (ValidationFailure f) => fieldErrors.addAll(f.fields),
+      (_) {},
+    );
+    Password.validate(password).fold(
+      (ValidationFailure f) => fieldErrors.addAll(f.fields),
+      (_) {},
+    );
+    if (fieldErrors.isNotEmpty) {
+      return Left(ValidationFailure(fields: fieldErrors));
+    }
     try {
       final Response<RegisterResponse> response = await _authenticationApi
           .register(
@@ -185,13 +205,14 @@ final class AuthRepositoryImpl implements AuthRepository, SessionCredentials {
     final int expiresIn = switch (payload['expiresIn']) {
       final int v => v,
       final num v => v.toInt(),
-      final String v => int.parse(v),
-      _ => throw const UnknownFailure(message: 'Malformed token payload.'),
+      final String v => int.tryParse(v) ?? 900,
+      _ => 900,
     };
+    final Role role = parseRoleFromPayload(payload);
     return Session(
       userId: '${payload['userId'] ?? payload['username'] ?? ''}',
       username: '${payload['username'] ?? ''}',
-      role: Role.customer,
+      role: role,
       accessToken: '${payload['accessToken'] ?? ''}',
       refreshToken: '${payload['refreshToken'] ?? fallbackRefreshToken ?? ''}',
       accessExpiresAt: DateTime.now().toUtc().add(Duration(seconds: expiresIn)),

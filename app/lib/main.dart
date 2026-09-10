@@ -15,6 +15,7 @@ import 'config/session_gate.dart';
 import 'config/theme.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   final EnvironmentConfig config = AppEnv.load();
   final Reporter reporter = createReporter(config);
 

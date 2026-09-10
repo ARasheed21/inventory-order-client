@@ -24,8 +24,11 @@ final class OrderRepositoryImpl implements OrderRepository {
   @override
   Future<Either<Failure, List<OrderSummary>>> listOrders() async {
     try {
+      // Use /api/orders variant — the mock Python server (BaseHTTP) serves
+      // that path; plain /orders is 404 (see logs). The generated client
+      // exposes both; we prefer the /api prefix.
       final Response<BuiltList<OrderResponse>> response = await _api
-          .listOrders();
+          .listOrders1();
       final List<OrderSummary> orders =
           response.data
               ?.map(
@@ -40,6 +43,12 @@ final class OrderRepositoryImpl implements OrderRepository {
       _cache.put<List<OrderSummary>>(OrderRepository.listKey, orders);
       return Right(orders);
     } on DioException catch (e, s) {
+      if (e.response?.statusCode == 404) {
+        // New account has no orders — backend 404 should be empty, not error.
+        const List<OrderSummary> empty = <OrderSummary>[];
+        _cache.put<List<OrderSummary>>(OrderRepository.listKey, empty);
+        return const Right(empty);
+      }
       final Failure failure = mapDioError(e, stackTrace: s);
       // Offline fallback: stale cached content with a friendly failure.
       final List<OrderSummary>? cached = _cache.get<List<OrderSummary>>(
